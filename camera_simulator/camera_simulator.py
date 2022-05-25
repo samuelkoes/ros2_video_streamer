@@ -33,13 +33,14 @@ class CameraSimulator(Node):
 
     """
 
+    frame_id_ = 0
+
     def __init__(self, **kwargs):
         super().__init__("camera_simulator")
 
         image_topic_ = self.declare_parameter("image_topic", "/image/image_raw").value
         camera_info_topic_ = self.declare_parameter("camera_info_topic", "/image/camera_info").value
 
-        self.frame_id_ = self.declare_parameter("frame_id", "camera").value
         self.camera_name_ = self.declare_parameter("camera_name", "narrow_stereo").value
 
         self.calibration_file = kwargs["calibration_file"]
@@ -113,6 +114,8 @@ class CameraSimulator(Node):
 
         self.image_publisher_.publish(img_msg)
 
+        self.frame_id_ += 1
+
     def get_camera_info(self, time):
         """
         From https://github.com/FurqanHabibi/cozmo_driver_ros2/blob/master/camera_info_manager.py
@@ -131,7 +134,8 @@ class CameraSimulator(Node):
         ci.p = self.calib["projection_matrix"]["data"]
 
         ci.header.stamp = time
-        ci.header.frame_id = self.frame_id_
+        ci.header.frame_id = str(self.frame_id_)
+
         return ci
 
     def get_time_msg(self):
@@ -150,7 +154,7 @@ class CameraSimulator(Node):
         """
         img_msg = CvBridge().cv2_to_imgmsg(image, encoding="bgr8")
         img_msg.header.stamp = time
-        img_msg.header.frame_id = self.frame_id_
+        img_msg.header.frame_id = str(self.frame_id_)
         return img_msg
 
     def get_compressed_msg(self, image):
@@ -172,7 +176,7 @@ def main(args=None):
     parser.add_argument("--type", type=str, default="video", help='type of "image" or "video')
     parser.add_argument("--start", type=int, default=0, help="starting position")
 
-    extra_args = parser.parse_args()
+    extra_args, _ = parser.parse_known_args()
 
     rclpy.init(args=args)
 
