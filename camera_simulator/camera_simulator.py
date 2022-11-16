@@ -1,17 +1,3 @@
-# Copyright 2016 Open Source Robotics Foundation, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import rclpy
 import argparse
 from rclpy.node import Node
@@ -40,6 +26,7 @@ class CameraSimulator(Node):
 
         image_topic_ = self.declare_parameter("image_topic", "/image/image_raw").value
         camera_info_topic_ = self.declare_parameter("camera_info_topic", "/image/camera_info").value
+        video_fps = self.declare_parameter("video_fps", 60).value
 
         self.camera_name_ = self.declare_parameter("camera_name", "narrow_stereo").value
 
@@ -77,16 +64,10 @@ class CameraSimulator(Node):
         path = kwargs['path']
 
         if self.type == "video":
-            if not os.path.isfile(path):
-                raise RuntimeError(f"Invalid video path: {path}")
+            self.vc = cv2.VideoCapture(kwargs["path"])
+            self.vc.set(cv2.CAP_PROP_POS_MSEC, kwargs["start"])
 
-            try:
-                self.vc = cv2.VideoCapture(kwargs["path"])
-                self.vc.set(cv2.CAP_PROP_POS_MSEC, kwargs["start"])
-            except:
-                print("End of file")
-
-            video_fps = self.vc.get(cv2.CAP_PROP_FPS)
+            # video_fps = self.vc.get(cv2.CAP_PROP_FPS)
             self.get_logger().info(f"Publishing image with {video_fps} fps")
 
             self.timer = self.create_timer(1.0 / video_fps, self.image_callback)
@@ -97,22 +78,25 @@ class CameraSimulator(Node):
             self.get_logger().info("All images have been published")
 
     def image_callback(self, image_path=None):
+        image = None
         if self.type == "video":
-            rval, image = self.vc.read()
+            if self.vc.isOpened():
+                rval, image = self.vc.read()
         elif image_path:
             image = cv2.imread(image_path)
         else:
             self.get_logger().error("Image path is none.")
             raise ValueError()
 
-        time_msg = self.get_time_msg()
-        img_msg = self.get_image_msg(image, time_msg)  # Convert the image to a message
+        if image is not None:
+            time_msg = self.get_time_msg()
+            img_msg = self.get_image_msg(image, time_msg)  # Convert the image to a message
 
-        if self.calib:
-            camera_info_msg = self.get_camera_info(time_msg)
-            self.camera_info_publisher_.publish(camera_info_msg)
+            if self.calib:
+                camera_info_msg = self.get_camera_info(time_msg)
+                self.camera_info_publisher_.publish(camera_info_msg)
 
-        self.image_publisher_.publish(img_msg)
+            self.image_publisher_.publish(img_msg)
 
         self.frame_id_ += 1
 
