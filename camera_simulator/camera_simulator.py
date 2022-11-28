@@ -80,8 +80,8 @@ class CameraSimulator(Node):
     def image_callback(self, image_path=None):
         image = None
         if self.type == "video":
-            if self.vc.isOpened():
-                rval, image = self.vc.read()
+            assert self.vc.isOpened()
+            rval, image = self.vc.read()
         elif image_path:
             image = cv2.imread(image_path)
         else:
