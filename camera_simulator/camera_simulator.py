@@ -83,6 +83,7 @@ class CameraSimulator(Node):
         if self.type == "video":
             assert self.vc.isOpened()
             rval, image = self.vc.read()
+            assert rval  # needs to be read successfully
         elif image_path:
             image = cv2.imread(image_path)
         else:
