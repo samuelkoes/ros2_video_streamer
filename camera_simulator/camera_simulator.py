@@ -1,5 +1,5 @@
 import rclpy
-from rclpy.qos import QoSPresetProfiles
+from rclpy.qos import QoSProfile, QoSHistoryPolicy
 import argparse
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CompressedImage, CameraInfo
@@ -33,8 +33,8 @@ class CameraSimulator(Node):
 
         self.calibration_file = kwargs["calibration_file"]
 
-        self.image_publisher_ = self.create_publisher(Image, image_topic_, qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
-        self.camera_info_publisher_ = self.create_publisher(CameraInfo, camera_info_topic_, qos_profile=QoSPresetProfiles.SENSOR_DATA.value)
+        self.image_publisher_ = self.create_publisher(Image, image_topic_, qos_profile=QoSProfile(history=QoSHistoryPolicy.KEEP_ALL))
+        self.camera_info_publisher_ = self.create_publisher(CameraInfo, camera_info_topic_, qos_profile=QoSProfile(history=QoSHistoryPolicy.KEEP_ALL))
 
         self.br = CvBridge()
 
