@@ -65,7 +65,12 @@ class CameraSimulator(Node):
         path = kwargs['path']
 
         if self.type == "video":
-            self.vc = cv2.VideoCapture(kwargs["path"])
+            if "http://192.168.4.1:81" in path:
+                os.system(
+                    "publicId=$(awk '/privateId: /{print $2}' /var/lib/cred/data.yml)"
+                    " && nmcli dev wifi connect \"ceklok-smk-cam-$publicId-1472\" password \"ceklok-smk-cam-$publicId-1472\""
+                )
+            self.vc = cv2.VideoCapture(path)
             self.vc.set(cv2.CAP_PROP_POS_MSEC, kwargs["start"])
 
             # video_fps = self.vc.get(cv2.CAP_PROP_FPS)
